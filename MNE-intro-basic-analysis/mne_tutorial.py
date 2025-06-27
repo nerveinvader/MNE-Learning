@@ -1,5 +1,8 @@
 ## MNE Python Tutorial
 ## Link to Tutorial: https://mne.tools/stable/auto_tutorials/intro/10_overview.html
+## Data files are local, not uploaded to GitHub.
+## Put this in the main folder of the project,
+## outside of MNE folder which contains data.
 
 #%%
 ##* IMPORT
