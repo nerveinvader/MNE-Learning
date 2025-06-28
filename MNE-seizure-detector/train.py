@@ -23,3 +23,8 @@ print("##########")
 sample_raw = mne.io.read_raw_edf(os.path.join(DATA_PATH, "./chb01/chb01_01.edf"), preload=False)
 print("Sample Inspection: chb01/chb01_01.edf")
 print(sample_raw.info)
+## Info:
+## 8 non-empty values, bads [], chs: 23 EEG, custom_ref: false,
+## highpass: 0, lowpass: 128 Hz,
+## sfreq: 256 Hz
+print("##########")
