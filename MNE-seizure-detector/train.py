@@ -28,3 +28,19 @@ print(sample_raw.info)
 ## highpass: 0, lowpass: 128 Hz,
 ## sfreq: 256 Hz
 print("##########")
+
+##* Preprocessing
+
+def preprocess(raw):
+	"""
+	Preprocessing the raw `EDF` data > Returns processed `EDF` data.
+	1. Standardize the naming of channels\n
+	2. Filter signals\n
+	3. No resample to 256Hz needed\n
+	"""
+	raw.rename_channels(lambda x: x.strip().upper()) # Std Naming to UPPERCASE
+	raw.filter(0.50, 40, fir_design='firwin') # Filtering 0.5-40Hz
+	raw.notch_filter(60.) # US line noise
+
+	pp_raw = raw
+	return pp_raw
