@@ -5,15 +5,18 @@
 #%%
 ##* Imports
 import os
+import pickle
+import glob
 import mne
+import tqdm
 
 #%%
 ##* Data
 print("Current directory: ", os.getcwd())
 
 # All the files
-#DATA_PATH = "./MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0" # data dir for run command
-DATA_PATH = "./data/chb-mit-eeg-database-1.0.0" # data dir for interactive
+DATA_PATH = "./MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0" # data dir for run command
+#DATA_PATH = "./data/chb-mit-eeg-database-1.0.0" # data dir for interactive
 
 print("Dataset is ready: ", os.path.isdir(DATA_PATH))
 print("##########")
@@ -81,25 +84,114 @@ def get_seizure_labels(annotation_file: str) -> dict:
 	]\n
 	Returns {"edf_filename": [(start, end), ...]}
 	"""
+	if not os.path.exists(annotation_file):
+		# File not found Error
+		raise FileNotFoundError(f"Summary File (.txt) not found at: {annotation_file}.")
+
 	seizure_dict: dict = {}
 	current_file = None
+	seizure_active = False
 
 	with open(annotation_file, 'r') as an:
+		start = 0.0	## Start of the seizure
+		end = 0.0	## End of the seizure
 		for line in an:
 			line.strip()
 			if line.startswith("File Name:"):
 				current_file = line.split(":")[1].strip()
 				seizure_dict[current_file] = []
-			if line.startswith("Seizure Start Time:"):
-				start = float(line.split()[3])
-				next_line = next(an).strip()
-				end = float(next_line.split()[3])
-				seizure_dict[current_file].append((start, end))
+				seizure_active = False
+			elif line.startswith("Seizure Start Time:"): # Start
+				if current_file is None:
+					raise ValueError("Seizure start encountered before file declaration.")
+				try:
+					start = float(line.split()[3])
+					seizure_active = True
+				except (IndexError, ValueError):
+					print(f"Warning: Malformed seizure start line: {line}")
+					continue
+			elif line.startswith("Seizure End Time:") and seizure_active:
+				try:
+					#next_line = next(an).strip()
+					end = float(line.split()[3])
+					seizure_dict[current_file].append((start, end))
+				except (IndexError, ValueError):
+					print(f"Warning: Malformed seizure end line: {line}.")
+	totatl_files = len(seizure_dict)
+	seizure_files = sum(1 for v in seizure_dict.values() if v)
+	seizure_count = sum(len(v) for v in seizure_dict.values())
+	print(f"Processed {totatl_files} EEG files.")
+	print(f"- Files with seizures: {seizure_files}")
+	print(f"- Files without seizures: {totatl_files - seizure_files}.")
+	print(f"- Seizures found: {seizure_count}.")
 	return seizure_dict
-
 
 #%%
 # Annotation example
 print(get_seizure_labels(os.path.join(DATA_PATH, "./chb01/chb01-summary.txt")))
 
 # %%
+# Serialization for Business
+def save_labels_to_pickle(labels_dict: dict, output_path: str):
+	"""
+	Serialize labels dictionary for quick reloading.
+	Write as binary format.
+	"""
+	with open(output_path, 'wb') as pkl_file:
+		pickle.dump(labels_dict, pkl_file)
+	print(f"Saved labels to {output_path}; (Size: {os.path.getsize(output_path)/1e6:.1f} MB)")
+
+def load_labels_from_pickle(pickl_path: str) -> dict:
+	"""
+	Load serialized labels dictionary.
+	Read binary format.
+	"""
+	if not os.path.exists(pickl_path):
+		raise FileNotFoundError(f"Pickle file not found at: {pickl_path}.")
+	with open(pickl_path, 'rb') as pckl_file:
+		return pickle.load(pckl_file)
+
+# %%
+##* Example
+if __name__ == "__main__":
+	# Specific patient
+	patient_id = "chb01"
+	annotation_path = f"{DATA_PATH}/{patient_id}/{patient_id}-summary.txt"
+
+	seizure_labels = get_seizure_labels(annotation_path)
+
+	pickle_path = f"{DATA_PATH}/{patient_id}/{patient_id}-seizure-labels.pkl"
+	save_labels_to_pickle(seizure_labels, pickle_path)
+
+	labels = load_labels_from_pickle(pickle_path)
+	print(f"Patient chb01: {len(labels)} files, {sum(len(v) for v in labels.values())} seizures.")
+
+# %%
+##* Multi Patient Processing
+def process_single_patient(patient_dir, patient_id):
+	"""
+	Process a single patient using the pipeline above.
+	Saves a `.pkl` file per patient. Doesn't return anything.
+	"""
+	ann_path = os.path.join(patient_dir, f"{patient_id}-summary.txt")
+	pckl_path = os.path.join(patient_dir, f"{patient_id}-seizure-labels.pkl")
+	if not os.path.exists(pckl_path):
+		try:
+			seizure_labels = get_seizure_labels(ann_path)
+			save_labels_to_pickle(seizure_labels, pckl_path)
+		except Exception as e:
+			print(f"Error processing {patient_id}: {str(e)}.")
+	else:
+		pass
+
+def process_all_patients(base_dir: str = DATA_PATH):
+	"""
+	Process all the patients.
+	"""
+	patient_dirs = sorted([d for d in glob.glob(os.path.join(base_dir, "chb*"))
+						if os.path.isdir(d)])
+	print(f"Found {len(patient_dirs)} patients.")
+	# p is abbreviation for patient
+	for p_dir in tqdm(patient_dirs):
+		p_id = os.path.basename(p_dir)
+		process_single_patient(p_dir, p_id)
