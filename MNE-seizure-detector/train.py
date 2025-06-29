@@ -192,6 +192,62 @@ def process_all_patients(base_dir: str = DATA_PATH):
 						if os.path.isdir(d)])
 	print(f"Found {len(patient_dirs)} patients.")
 	# p is abbreviation for patient
-	for p_dir in tqdm(patient_dirs):
+	for p_dir in tqdm.tqdm(patient_dirs):
 		p_id = os.path.basename(p_dir)
 		process_single_patient(p_dir, p_id)
+
+#%%
+##* Verifying dataset / Business
+def verify_dataset(base_dir: str = DATA_PATH) -> dict:
+	"""
+	Data validation. Critical for business side reports.
+	Returns a `dictionary` as report.
+	"""
+	report = {
+		"total_patients": 0,
+		"processed_patients": 0,
+		"total_seizures": 0,
+		"missing_summaries": [],
+	}
+	for patient_dir in glob.glob(os.path.join(base_dir, "chb*")):
+		if not os.path.exists(patient_dir):
+			continue
+		patinet_id = os.path.basename(patient_dir)
+		report["total_patients"] += 1
+
+		ann_path = os.path.join(patient_dir, f"{patient_id}-summary.txt")
+		pckl_path = os.path.join(patient_dir, f"{patient_id}_seizure_labels.pkl")
+
+		if not os.path.exists(ann_path):
+			report["missing_summaries"].append(patient_id)
+			continue
+
+		if not os.path.exists(pckl_path):
+			report["processed_patients"] += 1
+			try:
+				labels = load_labels_from_pickle(pckl_path)
+				report["total_seizures"] += sum(len(v) for v in labels.values())
+			except:
+				os.remove(pckl_path)
+
+	# Business-ready report
+	print("\n=== DATASET INTEGRITY REPORT ===")
+	print(f"Patients: {report['processed_patients']}/{report['total_patients']} processed")
+	print(f"Total seizures: {report['total_seizures']}")
+
+	if report["missing_summaries"]:
+		print(f"\nWARNING: Missing summaries for {len(report['missing_summaries'])} patients:")
+		print(", ".join(report["missing_summaries"]))
+
+	return report
+
+# %%
+##* Example of Multi patient processing
+process_all_patients()
+
+# %%
+##* Example of Business report
+print(os.listdir("./"))
+report = verify_dataset("./data/chb-mit-eeg-database-1.0.0")
+
+# %%
