@@ -247,7 +247,6 @@ process_all_patients()
 
 # %%
 ##* Example of Business report
-print(os.listdir("./"))
 report = verify_dataset("./data/chb-mit-eeg-database-1.0.0")
 
 # %%
