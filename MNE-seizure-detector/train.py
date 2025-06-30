@@ -279,7 +279,7 @@ def create_segments(raw: mne.io.Raw, seg_sec: float = 4, stride_sec: float = 2) 
 
 # Assign label to segments
 def assign_seg_label(
-		raw: mne.io.Raw, segments: np.ndarray,
+		segments: np.ndarray,
 		seizure_intervals,
 		seg_sec, stride_sec) -> np.ndarray:
 	"""
@@ -416,7 +416,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 					# create seg and labels
 					segments = create_segments(p_raw, SEG_SEC, STRIDE_SEC)
 					segment_labels = assign_seg_label(
-						p_raw, segments, seizure_labels[edf_file],
+						segments, seizure_labels[edf_file],
 						SEG_SEC, STRIDE_SEC)
 
 					# extract features
