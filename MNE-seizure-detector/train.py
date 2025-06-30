@@ -11,6 +11,7 @@ import mne
 import numpy as np
 from scipy import signal, stats
 import h5py
+from collections import defaultdict
 
 import tqdm
 import pandas as pd
@@ -172,7 +173,7 @@ if __name__ == "__main__":
 	print(f"Patient chb01: {len(labels)} files, {sum(len(v) for v in labels.values())} seizures.")
 
 # %%
-##* Multi Patient Processing
+##* Multi Patient Processing to Save pickle file
 def process_single_patient(patient_dir, patient_id):
 	"""
 	Process a single patient using the pipeline above.
@@ -276,6 +277,28 @@ def create_segments(raw: mne.io.Raw, seg_sec: float = 4, stride_sec: float = 2) 
 		segments.append(data[:, start:start+n_samples])
 	return np.stack(segments)
 
+# Assign label to segments
+def assign_seg_label(
+		raw: mne.io.Raw, segments: np.ndarray,
+		seizure_intervals,
+		seg_sec, stride_sec) -> np.ndarray:
+	"""
+	Assign seizure labels to segments based on annotation times.
+	"""
+	# create label array [0 non, 1 seizure]
+	labels = np.zeros(len(segments), dtype=np.int8)
+
+	# calculate seg start time in sec
+	seg_start = [i * stride_sec for i in range(len(segments))]
+	seg_end = [start + seg_sec for start in seg_start]
+
+	# mark segments
+	for start_sec, end_sec in seizure_intervals:
+		for i, (sg_start, sg_end) in enumerate(zip(seg_start, seg_end)):
+			if sg_end > start_sec and sg_start < end_sec:
+				labels[i] = 1
+	return labels
+
 # Feature extract
 def extract_features(segment: np.ndarray, sfreq: int) -> np.ndarray:
 	"""
@@ -303,15 +326,125 @@ def extract_features(segment: np.ndarray, sfreq: int) -> np.ndarray:
 	return np.array(features)
 
 #%%
-##* Example of Feature extraction
-all_features = []
-all_labels = []
+# Save buffered data to HDF5 datasets
+def save_buffer_to_hdf5(buffer_features, buffer_labels, features_dset, labels_dset):
+	"""
+	Append buffered data to HDF5 datasets
+	"""
+	# convert to np.array
+	f_array = np.array(buffer_features, dtype=np.float32)	# features
+	l_array = np.array(buffer_labels, dtype=np.int8)		# labels
 
+	# resize
+	current_size = features_dset.shape[0]
+	new_size = current_size + f_array.shape[0]
+	features_dset.resize((new_size, f_array.shape[1]))
+	labels_dset.resize((new_size,))
 
-# Store features
-with h5py.File('eeg_features.h5', 'w') as hf:
-	hf.create_dataset('features', data=all_features, compression='gzip')
-	hf.create_dataset('labels', data=all_labels, compression='gzip')
-	hf.attrs['segment_sec'] = 4.0
-	hf.attrs['stride_sec'] = 2.0
-	hf.attrs['feature_version'] = 'v0.1-clinical'
+	# append data
+	features_dset[current_size:new_size] = f_array
+	labels_dset[current_size:new_size] = l_array
+
+#%%
+##* Feature extraction process for all patients
+# Config
+SEG_SEC = 4.0		# standard segment size
+STRIDE_SEC = 2.0	# 50% overlap
+SAMPLE_RATE = 256	# standard sample rate
+BUFFER_SIZE = 5000	# segements to load before writing on disk
+# standard channels - 23 Ch
+STD_CHANNELS = [
+	'FP1-F7', 'F7-T7', 'T7-P7', 'P7-O1', 'FP1-F3', 'F3-C3', 'C3-P3', 'P3-O1',
+	'FP2-F4', 'F4-C4', 'C4-P4', 'P4-O2', 'FP2-F8', 'F8-T8', 'T8-P8', 'P8-O2',
+	'FZ-CZ', 'CZ-PZ', 'P7-T7', 'T7-FT9', 'FT9-FT10', 'FT10-T8', 'T8-P8-1'
+]
+
+def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
+	"""
+	Full pipeline. Process all patients.
+	Save features + labels on disk with `HDF5` format
+	"""
+	with h5py.File(output_file, 'w') as hf:
+		# datasets
+		features_dset = hf.create_dataset(
+			'features', (0, 0),
+			maxshape=(None, None), chunks=(1000, 230),
+			compression='gzip')
+		labels_dset = hf.create_dataset(
+			'labels', (0, 0),
+			maxshape=(None,), chunks=(1000,),
+			compression='gzip')
+		metadata = hf.create_group('metadata')
+
+		# process each patient
+		patient_dirs = [d for d in os.listdir(base_dir)
+				  if d.startswith('chb') and os.path.isdir(os.path.join(base_dir, d))]
+		total_segments = 0
+		buffer_features = []
+		buffer_labels = []
+
+		for patient_id in tqdm.tqdm(sorted(patient_dirs), desc="Processing patients:"):
+			patient_path = os.path.join(base_dir, patient_id)
+
+			# load labels from pickle file
+			labels_path = os.path.join(patient_path, f"{patient_id}-seizure-labels.pkl")
+			if not os.path.exists(labels_path):
+				print(f"Skipping {patient_id}: No labels found.")
+				continue
+
+			seizure_labels = load_labels_from_pickle(labels_path)
+
+			# process edf file
+			edf_files = [f for f in os.listdir(patient_path)
+				if f.endswith('.edf') and not f.startswith('.')]
+
+			for edf_file in tqdm.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
+				# skip files without annotation
+				if edf_file not in seizure_labels:
+					continue
+
+				file_path = os.path.join(patient_id, edf_file)
+
+				try:
+					# load and preprocess
+					raw = mne.io.read_raw_edf(file_path, preload=True)
+					p_raw: mne.io.Raw = preprocess(raw)
+
+					# std channels
+					p_raw.pick_channels([ch.upper().strip() for ch in STD_CHANNELS])
+
+					# create seg and labels
+					segments = create_segments(p_raw, SEG_SEC, STRIDE_SEC)
+					segment_labels = assign_seg_label(
+						p_raw, segments, seizure_labels[edf_file],
+						SEG_SEC, STRIDE_SEC)
+
+					# extract features
+					for i, segment in enumerate(segments):
+						features = extract_features(segment, SAMPLE_RATE)
+						buffer_features.append(features)
+						buffer_labels.append(segment_labels[i])
+
+						# save when buffer fills up
+						if len(buffer_features) >= BUFFER_SIZE:
+							save_buffer_to_hdf5(
+								buffer_features, buffer_labels,
+								features_dset, labels_dset)
+							buffer_features = []
+							buffer_labels = []
+					total_segments += len(segments)
+				except Exception as e:
+					print(f"Error processing {edf_file}: {str(e)}")
+		if buffer_features:
+			save_buffer_to_hdf5(
+				buffer_features, buffer_labels,
+				features_dset, labels_dset)
+
+		# add metadata
+		metadata.attrs['total_patients'] = len(patient_dirs)
+		metadata.attrs['total_segments'] = total_segments
+		metadata.attrs['segment_sec'] = SEG_SEC
+		metadata.attrs['stride_sec'] = STRIDE_SEC
+		metadata.attrs['channels'] = str(STD_CHANNELS)
+
+	print(f"\nCompleted! Saved {total_segments} segments to {output_file}")
