@@ -9,14 +9,15 @@ import pickle
 import glob
 import mne
 import tqdm
+import pandas as pd
 
 #%%
 ##* Data
 print("Current directory: ", os.getcwd())
 
 # All the files
-DATA_PATH = "./MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0" # data dir for run command
-#DATA_PATH = "./data/chb-mit-eeg-database-1.0.0" # data dir for interactive
+DATA_PATH2 = "./MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0" # data dir for run command
+DATA_PATH = "./data/chb-mit-eeg-database-1.0.0" # data dir for interactive
 
 print("Dataset is ready: ", os.path.isdir(DATA_PATH))
 print("##########")
@@ -209,26 +210,29 @@ def verify_dataset(base_dir: str = DATA_PATH) -> dict:
 		"total_seizures": 0,
 		"missing_summaries": [],
 	}
-	for patient_dir in glob.glob(os.path.join(base_dir, "chb*")):
-		if not os.path.exists(patient_dir):
-			continue
-		patinet_id = os.path.basename(patient_dir)
-		report["total_patients"] += 1
 
+	for patient_dir in glob.glob(os.path.join(base_dir, "chb*")):
+		if not os.path.isdir(patient_dir):
+			continue
+
+		patient_id = os.path.basename(patient_dir)
+		report["total_patients"] += 1
 		ann_path = os.path.join(patient_dir, f"{patient_id}-summary.txt")
-		pckl_path = os.path.join(patient_dir, f"{patient_id}_seizure_labels.pkl")
+		pckl_path = os.path.join(patient_dir, f"{patient_id}-seizure-labels.pkl")
 
 		if not os.path.exists(ann_path):
 			report["missing_summaries"].append(patient_id)
 			continue
 
-		if not os.path.exists(pckl_path):
+		if os.path.exists(pckl_path):
 			report["processed_patients"] += 1
 			try:
 				labels = load_labels_from_pickle(pckl_path)
+				#print(labels)	# Debug purpose
 				report["total_seizures"] += sum(len(v) for v in labels.values())
 			except:
-				os.remove(pckl_path)
+				print("Remove", pckl_path)
+				#os.remove(pckl_path)	# If corrupted detected.
 
 	# Business-ready report
 	print("\n=== DATASET INTEGRITY REPORT ===")
@@ -241,12 +245,13 @@ def verify_dataset(base_dir: str = DATA_PATH) -> dict:
 
 	return report
 
+##* Example of Business report
+report = verify_dataset(DATA_PATH)
+report_df = pd.DataFrame([report])
+report_df.to_markdown("dataset_report.md") # MD file of report.
+
 # %%
 ##* Example of Multi patient processing
 process_all_patients()
-
-# %%
-##* Example of Business report
-report = verify_dataset("./data/chb-mit-eeg-database-1.0.0")
 
 # %%
