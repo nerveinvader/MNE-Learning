@@ -8,6 +8,10 @@ import os
 import pickle
 import glob
 import mne
+import numpy as np
+from scipy import signal, stats
+import h5py
+
 import tqdm
 import pandas as pd
 
@@ -255,3 +259,59 @@ report_df.to_markdown("dataset_report.md") # MD file of report.
 process_all_patients()
 
 # %%
+##* Feature extraction
+# Windowing system (segmentation)
+def create_segments(raw: mne.io.Raw, seg_sec: float = 4, stride_sec: float = 2) -> np.ndarray:
+	"""
+	Split EEG into overlapping segments.
+	Returns (n_segments, n_channels, n_sampless)
+	"""
+	sfreq = sample_raw.info['sfreq']
+	n_samples = int(seg_sec * sfreq)
+	step = int(stride_sec * sfreq)
+	data = raw.get_data()
+
+	segments = []
+	for start in range(0, data.shape[1] - n_samples, step):
+		segments.append(data[:, start:start+n_samples])
+	return np.stack(segments)
+
+# Feature extract
+def extract_features(segment: np.ndarray, sfreq: int) -> np.ndarray:
+	"""
+	Extract clinically validated features from an EEG segment.
+	Returns 1D feature vector of (n_channels * n_features)
+	"""
+	features = []
+	for chnl_data in segment:
+		# Time-domain features
+		features.append(np.mean(chnl_data))		# mean
+		features.append(np.std(chnl_data))		# variance
+		features.append(stats.skew(chnl_data))	# skewness
+		# kurtosis ?
+
+		# Freq-domain features
+		freq, psd = signal.welch(chnl_data, sfreq, nperseg=256)	# power spectral density
+		for band in [(0.5, 4), (4, 8), (8, 12), (12, 30), (30, 40)]:
+			band_mask = (freq >= band[0]) & (freq <= band[1])
+			features.append(np.mean(psd[band_mask]))
+
+		# Non-linear features
+		diff = np.diff(chnl_data)
+		features.append(np.sum(np.abs(diff)))	# line length
+		features.append(np.sum(diff * 2))		# energy
+	return np.array(features)
+
+#%%
+##* Example of Feature extraction
+all_features = []
+all_labels = []
+
+
+# Store features
+with h5py.File('eeg_features.h5', 'w') as hf:
+	hf.create_dataset('features', data=all_features, compression='gzip')
+	hf.create_dataset('labels', data=all_labels, compression='gzip')
+	hf.attrs['segment_sec'] = 4.0
+	hf.attrs['stride_sec'] = 2.0
+	hf.attrs['feature_version'] = 'v0.1-clinical'
