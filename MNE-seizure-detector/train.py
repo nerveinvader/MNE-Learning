@@ -63,7 +63,7 @@ def preprocess(raw: mne.io.BaseRaw) -> mne.io.BaseRaw:
 
 	return pp_raw
 
-#%%
+#%% # Comparison - non essential
 # Comparison (before-after preprocessing)
 sample_raw.plot_psd(fmax=120, show=False)
 preprocess(sample_raw).plot_psd(fmax=120)
@@ -127,7 +127,7 @@ def get_seizure_labels(annotation_file: str) -> dict:
 	print(f"- Seizures found: {seizure_count}.")
 	return seizure_dict
 
-#%%
+#%% # Annotation example - non essential
 # Annotation example
 print(get_seizure_labels(os.path.join(DATA_PATH, "./chb01/chb01-summary.txt")))
 
@@ -152,7 +152,7 @@ def load_labels_from_pickle(pickl_path: str) -> dict:
 	with open(pickl_path, 'rb') as pckl_file:
 		return pickle.load(pckl_file)
 
-# %%
+# %% # Example of one patient data processing - non essential
 ##* Example
 if __name__ == "__main__":
 	# Specific patient
