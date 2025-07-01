@@ -21,8 +21,8 @@ import pandas as pd
 print("Current directory: ", os.getcwd())
 
 # All the files
-DATA_PATH2 = "./MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0" # data dir for run command
-DATA_PATH = "./data/chb-mit-eeg-database-1.0.0" # data dir for interactive
+DATA_PATH = "./MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0" # data dir for run command
+DATA_PATH2 = "./data/chb-mit-eeg-database-1.0.0" # data dir for interactive
 
 print("Dataset is ready: ", os.path.isdir(DATA_PATH))
 print("##########")
@@ -260,7 +260,7 @@ report_df.to_markdown("dataset_report.md") # MD file of report.
 process_all_patients()
 
 # %%
-##* Feature extraction
+##* Segmentation, Assigning & Feature extraction
 # Windowing system (segmentation)
 def create_segments(raw: mne.io.Raw, seg_sec: float = 4, stride_sec: float = 2) -> np.ndarray:
 	"""
@@ -371,7 +371,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 			maxshape=(None, None), chunks=(1000, 230),
 			compression='gzip')
 		labels_dset = hf.create_dataset(
-			'labels', (0, 0),
+			'labels', (0,),
 			maxshape=(None,), chunks=(1000,),
 			compression='gzip')
 		metadata = hf.create_group('metadata')
@@ -379,12 +379,15 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 		# process each patient
 		patient_dirs = [d for d in os.listdir(base_dir)
 				  if d.startswith('chb') and os.path.isdir(os.path.join(base_dir, d))]
+		# patient_dirs = [chb01,...,chb24]
+
 		total_segments = 0
 		buffer_features = []
 		buffer_labels = []
 
-		for patient_id in tqdm.tqdm(sorted(patient_dirs), desc="Processing patients:"):
+		for patient_id in tqdm.notebook.tqdm(sorted(patient_dirs), desc="Processing patients:"):
 			patient_path = os.path.join(base_dir, patient_id)
+			# patient_path = "./MNE-seizure-detector/data/chb-mit-eeg-datab.../chb01,...,chb24"
 
 			# load labels from pickle file
 			labels_path = os.path.join(patient_path, f"{patient_id}-seizure-labels.pkl")
@@ -398,12 +401,12 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 			edf_files = [f for f in os.listdir(patient_path)
 				if f.endswith('.edf') and not f.startswith('.')]
 
-			for edf_file in tqdm.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
+			for edf_file in tqdm.notebook.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
 				# skip files without annotation
 				if edf_file not in seizure_labels:
 					continue
 
-				file_path = os.path.join(patient_id, edf_file)
+				file_path = os.path.join(patient_path, edf_file)
 
 				try:
 					# load and preprocess
@@ -448,3 +451,19 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 		metadata.attrs['channels'] = str(STD_CHANNELS)
 
 	print(f"\nCompleted! Saved {total_segments} segments to {output_file}")
+
+# %%
+##* Run the pipeline
+if __name__ == "__main__":
+	#dummy_data = np.random.randn(len(STD_CHANNELS), int(SEG_SEC * SAMPLE_RATE))
+	#feature_dim = len(extract_features(dummy_data, SAMPLE_RATE))
+	#print(f"Feature dimension: {feature_dim}")
+
+	# Full dataset
+	process_full_dataset(base_dir=DATA_PATH)
+# %%
+with h5py.File('eeg_features.h5', 'r') as hf:
+	print("Features shape:", hf['features'].shape)
+	print("Labels shape:", hf['labels'].shape)
+	print("Metadata:", dict(hf['metadata'].attrs))
+# %%
