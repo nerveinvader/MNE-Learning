@@ -385,7 +385,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 		buffer_features = []
 		buffer_labels = []
 
-		for patient_id in tqdm.tqdm(sorted(patient_dirs), desc="Processing patients:"):
+		for patient_id in tqdm.tqdm_gui(sorted(patient_dirs), desc="Processing patients:"):
 			patient_path = os.path.join(base_dir, patient_id)
 			# patient_path = "./MNE-seizure-detector/data/chb-mit-eeg-datab.../chb01,...,chb24"
 
@@ -401,7 +401,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 			edf_files = [f for f in os.listdir(patient_path)
 				if f.endswith('.edf') and not f.startswith('.')]
 
-			for edf_file in tqdm.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
+			for edf_file in tqdm.tqdm_gui(edf_files, desc=f"Files in {patient_id}", leave=False):
 				# skip files without annotation
 				if edf_file not in seizure_labels:
 					continue
