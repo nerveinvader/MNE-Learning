@@ -355,7 +355,7 @@ BUFFER_SIZE = 5000	# segements to load before writing on disk
 # standard channels - 23 Ch
 STD_CHANNELS = [
 	'FP1-F7', 'F7-T7', 'T7-P7', 'P7-O1', 'FP1-F3', 'F3-C3', 'C3-P3', 'P3-O1',
-	'FP2-F4', 'F4-C4', 'C4-P4', 'P4-O2', 'FP2-F8', 'F8-T8', 'T8-P8', 'P8-O2',
+	'FP2-F4', 'F4-C4', 'C4-P4', 'P4-O2', 'FP2-F8', 'F8-T8', 'T8-P8-0', 'P8-O2',
 	'FZ-CZ', 'CZ-PZ', 'P7-T7', 'T7-FT9', 'FT9-FT10', 'FT10-T8', 'T8-P8-1'
 ]
 
@@ -385,7 +385,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 		buffer_features = []
 		buffer_labels = []
 
-		for patient_id in tqdm.tqdm_gui(sorted(patient_dirs), desc="Processing patients:"):
+		for patient_id in tqdm.tqdm(sorted(patient_dirs), desc="Processing patients:"):
 			patient_path = os.path.join(base_dir, patient_id)
 			# patient_path = "./MNE-seizure-detector/data/chb-mit-eeg-datab.../chb01,...,chb24"
 
@@ -401,7 +401,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 			edf_files = [f for f in os.listdir(patient_path)
 				if f.endswith('.edf') and not f.startswith('.')]
 
-			for edf_file in tqdm.tqdm_gui(edf_files, desc=f"Files in {patient_id}", leave=False):
+			for edf_file in tqdm.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
 				# skip files without annotation
 				if edf_file not in seizure_labels:
 					continue
@@ -461,6 +461,7 @@ if __name__ == "__main__":
 
 	# Full dataset
 	process_full_dataset(base_dir=DATA_PATH)
+
 # %
 # with h5py.File('eeg_features.h5', 'r') as hf:
 # 	print("Features shape:", hf['features'].shape)
