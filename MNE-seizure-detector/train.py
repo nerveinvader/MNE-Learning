@@ -2,7 +2,7 @@
 ## Database:		CHB-MIT-EEG-Seizure database
 ## Current File:	train.py - To train the model on the dataset
 
-#%%
+#%
 ##* Imports
 import os
 import pickle
@@ -16,7 +16,7 @@ from collections import defaultdict
 import tqdm
 import pandas as pd
 
-#%%
+#%
 ##* Data
 print("Current directory: ", os.getcwd())
 
@@ -42,7 +42,7 @@ sample_raw = mne.io.read_raw_edf(os.path.join(DATA_PATH, "./chb01/chb01_01.edf")
 ## sfreq: 256 Hz
 print("##########")
 
-#%%
+#%
 ##* Preprocessing
 
 def preprocess(raw: mne.io.BaseRaw) -> mne.io.BaseRaw:
@@ -68,13 +68,13 @@ def preprocess(raw: mne.io.BaseRaw) -> mne.io.BaseRaw:
 
 	return pp_raw
 
-#%% # Comparison - non essential
+#% # Comparison - non essential
 # Comparison (before-after preprocessing)
-sample_raw.plot_psd(fmax=120, show=False)
-preprocess(sample_raw).plot_psd(fmax=120)
-print("##########")
+# sample_raw.plot_psd(fmax=120, show=False)
+# preprocess(sample_raw).plot_psd(fmax=120)
+# print("##########")
 
-#%%
+#%
 # Seizure annotation parser (on CHB MIT DB format)
 def get_seizure_labels(annotation_file: str) -> dict:
 	"""
@@ -132,11 +132,11 @@ def get_seizure_labels(annotation_file: str) -> dict:
 	print(f"- Seizures found: {seizure_count}.")
 	return seizure_dict
 
-#%% # Annotation example - non essential
+#% # Annotation example - non essential
 # Annotation example
-print(get_seizure_labels(os.path.join(DATA_PATH, "./chb01/chb01-summary.txt")))
+#print(get_seizure_labels(os.path.join(DATA_PATH, "./chb01/chb01-summary.txt")))
 
-# %%
+#%
 # Serialization for Business
 def save_labels_to_pickle(labels_dict: dict, output_path: str):
 	"""
@@ -157,22 +157,22 @@ def load_labels_from_pickle(pickl_path: str) -> dict:
 	with open(pickl_path, 'rb') as pckl_file:
 		return pickle.load(pckl_file)
 
-# %% # Example of one patient data processing - non essential
+#% # Example of one patient data processing - non essential
 ##* Example
-if __name__ == "__main__":
-	# Specific patient
-	patient_id = "chb01"
-	annotation_path = f"{DATA_PATH}/{patient_id}/{patient_id}-summary.txt"
+# if __name__ == "__main__":
+# 	# Specific patient
+# 	patient_id = "chb01"
+# 	annotation_path = f"{DATA_PATH}/{patient_id}/{patient_id}-summary.txt"
 
-	seizure_labels = get_seizure_labels(annotation_path)
+# 	seizure_labels = get_seizure_labels(annotation_path)
 
-	pickle_path = f"{DATA_PATH}/{patient_id}/{patient_id}-seizure-labels.pkl"
-	save_labels_to_pickle(seizure_labels, pickle_path)
+# 	pickle_path = f"{DATA_PATH}/{patient_id}/{patient_id}-seizure-labels.pkl"
+# 	save_labels_to_pickle(seizure_labels, pickle_path)
 
-	labels = load_labels_from_pickle(pickle_path)
-	print(f"Patient chb01: {len(labels)} files, {sum(len(v) for v in labels.values())} seizures.")
+# 	labels = load_labels_from_pickle(pickle_path)
+# 	print(f"Patient chb01: {len(labels)} files, {sum(len(v) for v in labels.values())} seizures.")
 
-# %%
+#%
 ##* Multi Patient Processing to Save pickle file
 def process_single_patient(patient_dir, patient_id):
 	"""
@@ -202,7 +202,7 @@ def process_all_patients(base_dir: str = DATA_PATH):
 		p_id = os.path.basename(p_dir)
 		process_single_patient(p_dir, p_id)
 
-#%%
+#%
 ##* Verifying dataset / Business
 def verify_dataset(base_dir: str = DATA_PATH) -> dict:
 	"""
@@ -251,15 +251,15 @@ def verify_dataset(base_dir: str = DATA_PATH) -> dict:
 	return report
 
 ##* Example of Business report
-report = verify_dataset(DATA_PATH)
-report_df = pd.DataFrame([report])
-report_df.to_markdown("dataset_report.md") # MD file of report.
+# report = verify_dataset(DATA_PATH)
+# report_df = pd.DataFrame([report])
+# report_df.to_markdown("dataset_report.md") # MD file of report.
 
-# %%
+# %
 ##* Example of Multi patient processing
-process_all_patients()
+# process_all_patients()
 
-# %%
+# %
 ##* Segmentation, Assigning & Feature extraction
 # Windowing system (segmentation)
 def create_segments(raw: mne.io.Raw, seg_sec: float = 4, stride_sec: float = 2) -> np.ndarray:
@@ -325,7 +325,7 @@ def extract_features(segment: np.ndarray, sfreq: int) -> np.ndarray:
 		features.append(np.sum(diff * 2))		# energy
 	return np.array(features)
 
-#%%
+#%
 # Save buffered data to HDF5 datasets
 def save_buffer_to_hdf5(buffer_features, buffer_labels, features_dset, labels_dset):
 	"""
@@ -345,7 +345,7 @@ def save_buffer_to_hdf5(buffer_features, buffer_labels, features_dset, labels_ds
 	features_dset[current_size:new_size] = f_array
 	labels_dset[current_size:new_size] = l_array
 
-#%%
+#%
 ##* Feature extraction process for all patients
 # Config
 SEG_SEC = 4.0		# standard segment size
@@ -385,7 +385,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 		buffer_features = []
 		buffer_labels = []
 
-		for patient_id in tqdm.notebook.tqdm(sorted(patient_dirs), desc="Processing patients:"):
+		for patient_id in tqdm.tqdm(sorted(patient_dirs), desc="Processing patients:"):
 			patient_path = os.path.join(base_dir, patient_id)
 			# patient_path = "./MNE-seizure-detector/data/chb-mit-eeg-datab.../chb01,...,chb24"
 
@@ -401,7 +401,7 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 			edf_files = [f for f in os.listdir(patient_path)
 				if f.endswith('.edf') and not f.startswith('.')]
 
-			for edf_file in tqdm.notebook.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
+			for edf_file in tqdm.tqdm(edf_files, desc=f"Files in {patient_id}", leave=False):
 				# skip files without annotation
 				if edf_file not in seizure_labels:
 					continue
@@ -452,18 +452,18 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 
 	print(f"\nCompleted! Saved {total_segments} segments to {output_file}")
 
-# %%
+#%
 ##* Run the pipeline
 if __name__ == "__main__":
-	#dummy_data = np.random.randn(len(STD_CHANNELS), int(SEG_SEC * SAMPLE_RATE))
-	#feature_dim = len(extract_features(dummy_data, SAMPLE_RATE))
-	#print(f"Feature dimension: {feature_dim}")
+	# dummy_data = np.random.randn(len(STD_CHANNELS), int(SEG_SEC * SAMPLE_RATE))
+	# feature_dim = len(extract_features(dummy_data, SAMPLE_RATE))
+	# print(f"Feature dimension: {feature_dim}")
 
 	# Full dataset
 	process_full_dataset(base_dir=DATA_PATH)
-# %%
-with h5py.File('eeg_features.h5', 'r') as hf:
-	print("Features shape:", hf['features'].shape)
-	print("Labels shape:", hf['labels'].shape)
-	print("Metadata:", dict(hf['metadata'].attrs))
-# %%
+# %
+# with h5py.File('eeg_features.h5', 'r') as hf:
+# 	print("Features shape:", hf['features'].shape)
+# 	print("Labels shape:", hf['labels'].shape)
+# 	print("Metadata:", dict(hf['metadata'].attrs))
+# %
