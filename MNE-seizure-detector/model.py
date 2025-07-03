@@ -5,7 +5,6 @@
 import h5py
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
 from sklearn.model_selection import train_test_split
 from sklearn.utils import class_weight
 
@@ -22,7 +21,9 @@ def load_data(h5_path: str = "eeg_features.h5") -> tuple:
 
 ##* Prepare model
 def create_model(input_shape):
-
+	"""
+	Create a simple model to train on the data.
+	"""
 	model = tf.keras.Sequential([
 		tf.keras.layers.Dense(128, activation='relu', input_shape=(input_shape,)),
 		tf.keras.layer.Dropout(0.5),
