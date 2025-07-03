@@ -2,3 +2,4 @@
 /MNE-seizure-detector/data/chb-mit-eeg-database-1.0.0
 *.h5
 eeg_features.h5
+*.h5
