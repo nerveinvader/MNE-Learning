@@ -43,5 +43,7 @@ def create_model(input_shape):
 	return model
 
 if __name__ == "__main__":
-	X, y = load_data()
-	create_model(X.shape[1])
+	print("TF Version:", tf.__version__)
+	print("Keras access:", tf.keras.__version__)
+	# X, y = load_data()
+	# create_model(X.shape[1])
