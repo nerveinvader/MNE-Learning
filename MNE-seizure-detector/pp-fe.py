@@ -1,6 +1,6 @@
 ## Algorithm:		MNE Seizure Detector
 ## Database:		CHB-MIT-EEG-Seizure database
-## Current File:	train.py - To train the model on the dataset
+## Current File:	pp-fe.py - To extract features and preprocess the dataset
 
 #%
 ##* Imports
