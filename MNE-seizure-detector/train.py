@@ -28,14 +28,14 @@ print("Dataset is ready: ", os.path.isdir(DATA_PATH))
 print("##########")
 
 # Summary of seizure recordings
-#SUMMARY_FILE = os.path.join(DATA_PATH, "RECORDS-WITH-SEIZURES")
-#with open(SUMMARY_FILE) as f:
+# SUMMARY_FILE = os.path.join(DATA_PATH, "RECORDS-WITH-SEIZURES")
+# with open(SUMMARY_FILE) as f:
 #	print(f"Seizure records:\n{f.read()[:500]}.") # preview first 500 chars
 
 # Sample inspection (.edf)
-sample_raw = mne.io.read_raw_edf(os.path.join(DATA_PATH, "./chb01/chb01_01.edf"), preload=True)
-#print("Sample Inspection: chb01/chb01_01.edf")
-#print(sample_raw.info)
+# sample_raw = mne.io.read_raw_edf(os.path.join(DATA_PATH, "./chb01/chb01_01.edf"), preload=True)
+# print("Sample Inspection: chb01/chb01_01.edf")
+# print(sample_raw.info)
 ## Info:
 ## 8 non-empty values, bads [], chs: 23 EEG, custom_ref: false,
 ## highpass: 0, lowpass: 128 Hz,
@@ -60,11 +60,11 @@ def preprocess(raw: mne.io.BaseRaw) -> mne.io.BaseRaw:
 	# Filtering 0.5-40Hz (non-brain activity)
 	# Signals above 40 will be contaminated by EMG/Muscle signals.
 	# In a study, over 40Hz showed +0.7% detection improvement with +31% false alarms
-	pp_raw.filter(0.50, 40, fir_design='firwin')
+	pp_raw.filter(0.50, 40, fir_design='firwin', verbose=0)
 
 	# Filter exactly 60 +/- 0.5Hz
 	# Analyzing the signals show a notch @ 60.Hz (the US noise)
-	pp_raw.notch_filter(60.)
+	pp_raw.notch_filter(60., verbose=0)
 
 	return pp_raw
 
@@ -267,7 +267,7 @@ def create_segments(raw: mne.io.Raw, seg_sec: float = 4, stride_sec: float = 2) 
 	Split EEG into overlapping segments.
 	Returns (n_segments, n_channels, n_sampless)
 	"""
-	sfreq = sample_raw.info['sfreq']
+	sfreq = raw.info['sfreq']
 	n_samples = int(seg_sec * sfreq)
 	step = int(stride_sec * sfreq)
 	data = raw.get_data()
@@ -295,7 +295,7 @@ def assign_seg_label(
 	# mark segments
 	for start_sec, end_sec in seizure_intervals:
 		for i, (sg_start, sg_end) in enumerate(zip(seg_start, seg_end)):
-			if sg_end > start_sec and sg_start < end_sec:
+			if (sg_start < end_sec) and (sg_end > start_sec):
 				labels[i] = 1
 	return labels
 
@@ -452,19 +452,121 @@ def process_full_dataset(base_dir: str, output_file: str = "eeg_features.h5"):
 
 	print(f"\nCompleted! Saved {total_segments} segments to {output_file}")
 
+##* Verify processed h5 file
+def verify_processing():
+	"""
+	Business-critical validation of processed data
+	"""
+    # 1. Check file size
+	file_size = os.path.getsize('eeg_features.h5') / (1024 * 1024)  # in MB
+	print(f"File size: {file_size:.1f} MB")
+
+    # 2. Check content
+	with h5py.File('eeg_features.h5', 'r') as hf:
+		n_windows = hf['features'].shape[0]
+		seizure_count = np.sum(hf['labels'][:])
+
+		print(f"Total windows: {n_windows}")
+		print(f"Seizure windows: {seizure_count} ({seizure_count/n_windows*100:.2f}%)")
+
+		# 3. Sample validation
+		sample_features = hf['features'][0]
+		print(f"Sample feature range: [{np.min(sample_features):.4f}, {np.max(sample_features):.4f}]")
+
+		# Business rule checks
+		assert file_size > 100, "File too small - processing likely failed"
+		assert n_windows > 50000, "Insufficient windows processed"
+		assert 0.5 < seizure_count/n_windows < 10, f"Abnormal seizure prevalence {seizure_count/n_windows}"
+
+	print("✅ Business validation passed")
+
+##* Load seizure times from .edf.seizure files
+def process_patient(base_dir, patient_id, output_file="eeg_features_next.h5"):
+	patient_dir = os.path.join(base_dir, patient_id)
+	labels_path = os.path.join(patient_dir, f"{patient_id}-seizure-labels.pkl")
+	if not os.path.exists(labels_path):
+		print(f"Skipping {patient_id}: No labels found")
+		return
+
+	seizure_labels = load_labels_from_pickle(labels_path)
+
+	with h5py.File(output_file, 'a') as hf:
+		if 'features' not in hf:
+			hf.create_dataset('features', (0, 230), maxshape=(None, 230), chunks=True, compression='gzip')
+			hf.create_dataset('labels', (0,), maxshape=(None,), chunks=True, compression='gzip')
+			hf.attrs['segment_sec'] = SEG_SEC
+			hf.attrs['stride_sec'] = STRIDE_SEC
+		edf_files = [f for f in os.listdir(patient_dir)
+			   if f.endswith('.edf') and f in seizure_labels]
+
+		for edf_file in tqdm.tqdm(edf_files, desc=f"Processing {patient_id}"):
+			file_path = os.path.join(patient_dir, edf_file)
+			try:
+				raw = mne.io.read_raw_edf(file_path, preload=True)
+				raw = preprocess(raw)
+				# p_raw.pick_channels([ch.upper().strip() for ch in STD_CHANNELS])
+				raw = raw.pick([ch.upper().strip() for ch in STD_CHANNELS])
+
+				segments = create_segments(raw, SEG_SEC, STRIDE_SEC)
+				segment_labels = assign_seg_label(
+					segments, seizure_labels[edf_file],
+					SEG_SEC, STRIDE_SEC)
+				for i, segment in enumerate(segments):
+					features = extract_features(segment, SAMPLE_RATE)
+
+					features_ds = hf['features']
+					labels_ds = hf['labels']
+
+					buffer_f = []
+					buffer_l = []
+					buffer_f.append(features)
+					buffer_l.append(segment_labels[i])
+
+					save_buffer_to_hdf5(buffer_f, buffer_l, features_ds, labels_ds)
+					buffer_f = []
+					buffer_l = []
+
+					# new_size = features_ds.shape[0] + 1
+					# features_ds.resize((new_size, 230))
+					# labels_ds.resize((new_size,))
+
+					# features_ds[-1] = features
+					# labels_ds[-1] = segment_labels[i]
+				n_seizure = np.sum(segment_labels)
+				print(f"{edf_file}: {len(segments)} segments, {n_seizure} seizure")
+			except Exception as e:
+				print(f"Error processing {edf_file}: {str(e)}")
+	print(f"Completed {patient_id}.")
+
 #%
 ##* Run the pipeline
 if __name__ == "__main__":
-	# dummy_data = np.random.randn(len(STD_CHANNELS), int(SEG_SEC * SAMPLE_RATE))
-	# feature_dim = len(extract_features(dummy_data, SAMPLE_RATE))
-	# print(f"Feature dimension: {feature_dim}")
-
 	# Full dataset
-	process_full_dataset(base_dir=DATA_PATH)
+	# process_full_dataset(base_dir=DATA_PATH)
 
-# %
-# with h5py.File('eeg_features.h5', 'r') as hf:
-# 	print("Features shape:", hf['features'].shape)
-# 	print("Labels shape:", hf['labels'].shape)
-# 	print("Metadata:", dict(hf['metadata'].attrs))
-# %
+	# Verification
+	# verify_processing()
+
+	# with h5py.File('eeg_features.h5', 'r') as hf:
+	# 	labels = hf['labels'][:]
+	# 	print(f"Total seizure segments: {np.sum(labels)}")
+	# 	print(f"Max label value: {np.max(labels)}")
+	# 	print(f"Label value counts: {np.unique(labels, return_counts=True)}")
+
+	process_patient(DATA_PATH, "chb01")
+
+	with h5py.File("eeg_features_next.h5", 'r') as hf:
+		labels = hf['labels'][:]
+		print(f"Seizure prevalence: {np.mean(labels)*100:.2f}%")
+
+
+	#! Debugs
+	# patient_id = "chb01"
+	# pickle_path = f"{DATA_PATH}/{patient_id}/{patient_id}-seizure-labels.pkl"
+	# seizure_labels = load_labels_from_pickle(pickle_path)
+	# print("Seizure intervals in chb01_03.edf: ", seizure_labels.get("chb01_03.edf", []))
+
+	# test_intervals = [(10, 20)]
+	# test_segment = np.zeros((100, 23, 1024))
+	# test_labels = assign_seg_label(segments=test_segment, seizure_intervals=test_intervals, seg_sec=4, stride_sec=2)
+	# print("Seizure segments should be ~5: ", np.sum(test_labels))
