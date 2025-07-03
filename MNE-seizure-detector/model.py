@@ -26,7 +26,7 @@ def create_model(input_shape):
 	"""
 	model = tf.keras.Sequential([
 		tf.keras.layers.Dense(128, activation='relu', input_shape=(input_shape,)),
-		tf.keras.layer.Dropout(0.5),
+		tf.keras.layers.Dropout(0.5),
 		tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(64, activation='relu'),
 		tf.keras.layers.Dense(1, activation='sigmoid')
@@ -43,6 +43,5 @@ def create_model(input_shape):
 	return model
 
 if __name__ == "__main__":
-	print(tf.__version__)
-	# X, y = load_data()
-	# create_model(X.shape[1])
+	X, y = load_data()
+	create_model(X.shape[1])
