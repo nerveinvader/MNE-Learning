@@ -553,7 +553,7 @@ if __name__ == "__main__":
 	# 	print(f"Max label value: {np.max(labels)}")
 	# 	print(f"Label value counts: {np.unique(labels, return_counts=True)}")
 
-	process_patient(DATA_PATH, "chb01")
+	process_patient(DATA_PATH, "chb02")
 
 	with h5py.File("eeg_features_next.h5", 'r') as hf:
 		labels = hf['labels'][:]
