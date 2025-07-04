@@ -9,6 +9,6 @@ Progress of the seizure detector
 4. Serialization for Business = DONE
 5. Dataset report = DONE
 6. Multipatient processing pipeline = DONE
-7. Feature extraction
+7. Feature extraction = DONE
 8. Model development
 ###
