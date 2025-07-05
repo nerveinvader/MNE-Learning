@@ -18,10 +18,10 @@ Progress of the seizure detector
 overall = ??%
 chb01 = 0.31%
 chb02 = 0.23%
-chb03 =
-chb04
-chb05
-chb06
+chb03 = 0.26%
+chb04 = 0.13%
+chb05 = 0.16%
+chb06 = 0.13%
 chb07
 chb08
 chb09
