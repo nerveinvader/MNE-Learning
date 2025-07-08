@@ -22,10 +22,10 @@ chb03 = 0.26%
 chb04 = 0.13%
 chb05 = 0.16%
 chb06 = 0.13%
-chb07
-chb08
-chb09
-chb10
+chb07 = 0.11%
+chb08 = 0.11%
+chb09 = 0.09%
+chb10 = 0.09%
 chb11
 chb12
 chb13
