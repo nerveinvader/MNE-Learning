@@ -23,5 +23,5 @@ We are focusing on the "intent" part of the dataset, while feeding all three pha
 2. Three windows (mne.Epochs) for Intent, Speech, and Resting phases,
 3. Filtering baseline frequency from each window (None for Rest phase),
 4. Training various models on these inputs,
-5. Compare the results and evaluations of each models,
+5. Compare the results and evaluations of each model,
 6. Extract features if the results are not viable or significant.
