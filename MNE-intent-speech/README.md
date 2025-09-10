@@ -25,3 +25,9 @@ We are focusing on the "intent" part of the dataset, while feeding all three pha
 4. Training various models on these inputs,
 5. Compare the results and evaluations of each model,
 6. Extract features if the results are not viable or significant.
+
+## Model
+EEGNet
+
+## Current ToDo
+[] Loading and Preprocessing of the dataset
