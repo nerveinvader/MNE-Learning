@@ -36,31 +36,37 @@ Total Trials = 5640
 Classes = Arriba/U, Abajo/D, Derecha/R, Izquierda/L
 Conditions = 0=Pronounced, 1=Inner, 2=Visualized
 Subjects = 10
-- sub-01 to 10 folders/ses-01 to 03 folders:
-- - sub-01_ses-01_task-innerspeech_eeg.bdf
-- - - Raw EEG file (EEG + EOG + EMG channels)
-- - - Channels = 128 + 8 (24 bits resolution)
-- - - Sampling rate = 1024 Hz
-- derivatives/sub-01 to 10 folders/ses-01 to 03 folders:
-- - sub-01_ses-01_eeg-epo.fif
-- - - Epochs of EEG data (segmented trials) (-500ms to 4000ms)
-- - - 200 events, 50 per class (U/D/R/L)
-- - - Labels
-- - sub-01_ses-01_exg-epo.fif
-- - - Same as eeg-epo.fif
-- - - Useful for detecting muscle movement for Pronounced speech
-- - sub-01_ses-01_events.dat
-- - - Event markers
-- - - Format = four col matrix: [1, 2, 3, 4]
-- - - - Each row is one Trial
-- - - - Col 1, 2 = sample #, class 0-4
-- - - - Col 3, 4 = condition 0-3, session number 1-3
-- - sub-01_ses-01_report.pkl
-- - - Age, Gender, Recording_time
-- - - Ans_R/_W = answer right/wrong
-- - - EMG_trials = position of contaminated trials
-- - - Power_EXG7/EXG8 = mean power for channel of contaminated trials
-- - - Baseline_EXG7/8_mean/_std = mean and std of the power channels
+sub-01 to 10 folders/ses-01 to 03 folders:
+- sub-01_ses-01_task-innerspeech_eeg.bdf
+- - Raw EEG file (EEG + EOG + EMG channels)
+- - Channels = 128 + 8 (24 bits resolution)
+- - Sampling rate = 1024 Hz
+derivatives/sub-01 to 10 folders/ses-01 to 03 folders:
+- sub-01_ses-01_eeg-epo.fif
+- - Epochs of EEG data (segmented trials) (-500ms to 4000ms)
+- - 200 events, 50 per class (U/D/R/L)
+- - Labels
+- sub-01_ses-01_exg-epo.fif
+- - Same as eeg-epo.fif
+- - Useful for detecting muscle movement for Pronounced speech
+- - Shape = [Trials x 8 channels x 1154]
+- - 1154 is number of samples (4.5s) x 256Hz
+- sub-01_ses-01_baseline-epo.fif
+- - Baseline/Rest periods
+- - Shape = [1 x 136 channels x 3841]
+- - 3841 is seconds of recording times 256Hz (final sampling rate)
+- sub-01_ses-01_events.dat
+- - Event markers
+- - Format = four col matrix: [1, 2, 3, 4]
+- - - Each row is one Trial
+- - - Col 1, 2 = sample #, class 0-4
+- - - Col 3, 4 = condition 0-3, session number 1-3
+- sub-01_ses-01_report.pkl
+- - Age, Gender, Recording_time
+- - Ans_R/_W = answer right/wrong
+- - EMG_trials = position of contaminated trials
+- - Power_EXG7/EXG8 = mean power for channel of contaminated trials
+- - Baseline_EXG7/8_mean/_std = mean and std of the power channels
 
 ## Current ToDo
 [] Loading and Preprocessing of the dataset
