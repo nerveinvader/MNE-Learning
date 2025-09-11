@@ -71,3 +71,6 @@ Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]
 
 ## Current ToDo
 [] Loading and Preprocessing of the dataset
+[] Inner speech = intent only, no EMG
+[] Pron. speech = pronounced, EMG activity
+[] Rest         = rest, baseline
