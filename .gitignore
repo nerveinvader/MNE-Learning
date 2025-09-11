@@ -5,3 +5,4 @@
 eeg_features.h5
 eeg_features.h5
 *.keras
+/MNE-intent-speech/data
