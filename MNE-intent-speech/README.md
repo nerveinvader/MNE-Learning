@@ -30,19 +30,19 @@ We are focusing on the "intent" part of the dataset, while feeding all three pha
 EEGNet
 
 ## Dataset
-Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]..
-Files:
-Total Trials = 5640
-Conditions = 0=Pronounced / 1=Inner / 2=Visualized
-Trial/Condition = 1128 / 2236 / 227
-Classes = Arriba/U, Abajo/D, Derecha/R, Izquierda/L
-Subjects = 10
-sub-01 to 10 folders/ses-01 to 03 folders:
+Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]
+* Files:
+* Total Trials = 5640
+* Conditions = 0=Pronounced / 1=Inner / 2=Visualized
+* Trial/Condition = 1128 / 2236 / 227
+* Classes = Arriba/U, Abajo/D, Derecha/R, Izquierda/L
+* Subjects = 10
+* sub-01 to 10 folders/ses-01 to 03 folders:
 - sub-01_ses-01_task-innerspeech_eeg.bdf
 - - Raw EEG file (EEG + EOG + EMG channels)
 - - Channels = 128 + 8 (24 bits resolution)
 - - Sampling rate = 1024 Hz -> 256Hz Final
-derivatives/sub-01 to 10 folders/ses-01 to 03 folders:
+* derivatives/sub-01 to 10 folders/ses-01 to 03 folders:
 - sub-01_ses-01_eeg-epo.fif
 - - Epochs of EEG data (segmented trials) (-500ms to 4000ms)
 - - 200 events, 50 per class (U/D/R/L)
