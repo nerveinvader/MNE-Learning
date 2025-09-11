@@ -15,7 +15,7 @@ Many studies and papers investigate motor intent, emotions, steady-state, and im
 We are attempting to detect, analyze, and decode EEG patterns before initiation of speaking, explaining, and conceptualization.
 
 ## Method
-We are going to use the dataset from the Nature paper "Thinking Out Loud", an open-access EEG dataset for inner speech recognition. The dataset contains three tasks per trial (each trial lasts ~5 secs): Intent, Talking, and Relaxing. For more information on their data collection, follow this link: [LINK]
+We are going to use the dataset from the Nature paper "Thinking Out Loud", an open-access EEG dataset for inner speech recognition. The dataset contains three tasks per trial (each trial lasts ~5 secs): Intent, Talking, and Relaxing. For more information on their data collection, follow this link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]
 
 ## Tasks
 We are focusing on the "intent" part of the dataset, while feeding all three phases of each trial to the model. Preprocessing methods that we are using in this project are:
@@ -28,6 +28,17 @@ We are focusing on the "intent" part of the dataset, while feeding all three pha
 
 ## Model
 EEGNet
+
+## Dataset
+Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]
+Files:
+- sub-01 to 10 folders/ses-01 to 03 folders:
+- - sub-01_ses-01_task-innerspeech_eeg.bdf
+- derivatives/sub-01 to 10 folders/ses-01 to 03 folders:
+- - sub-01_ses-01_eeg-epo.fif
+- - sub-01_ses-01_exg-epo.fif
+- - sub-01_ses-01_events.dat
+- - sub-01_ses-01_report.pkl
 
 ## Current ToDo
 [] Loading and Preprocessing of the dataset
