@@ -33,27 +33,28 @@ EEGNet
 Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]
 Files:
 Total Trials = 5640
+Conditions = 0=Pronounced / 1=Inner / 2=Visualized
+Trial/Condition = 1128 / 2236 / 227
 Classes = Arriba/U, Abajo/D, Derecha/R, Izquierda/L
-Conditions = 0=Pronounced, 1=Inner, 2=Visualized
 Subjects = 10
 sub-01 to 10 folders/ses-01 to 03 folders:
 - sub-01_ses-01_task-innerspeech_eeg.bdf
 - - Raw EEG file (EEG + EOG + EMG channels)
 - - Channels = 128 + 8 (24 bits resolution)
-- - Sampling rate = 1024 Hz
+- - Sampling rate = 1024 Hz -> 256Hz Final
 derivatives/sub-01 to 10 folders/ses-01 to 03 folders:
 - sub-01_ses-01_eeg-epo.fif
 - - Epochs of EEG data (segmented trials) (-500ms to 4000ms)
 - - 200 events, 50 per class (U/D/R/L)
-- - Labels
+- - Shape = [Trials x 128 ch x 1154]
+- - 1154 is number of samples (4.5s) x 256Hz
 - sub-01_ses-01_exg-epo.fif
 - - Same as eeg-epo.fif
 - - Useful for detecting muscle movement for Pronounced speech
-- - Shape = [Trials x 8 channels x 1154]
-- - 1154 is number of samples (4.5s) x 256Hz
+- - Shape = [Trials x 8 ch x 1154]
 - sub-01_ses-01_baseline-epo.fif
 - - Baseline/Rest periods
-- - Shape = [1 x 136 channels x 3841]
+- - Shape = [1 x 136 ch x 3841]
 - - 3841 is seconds of recording times 256Hz (final sampling rate)
 - sub-01_ses-01_events.dat
 - - Event markers
