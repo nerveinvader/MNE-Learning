@@ -30,7 +30,7 @@ We are focusing on the "intent" part of the dataset, while feeding all three pha
 EEGNet
 
 ## Dataset
-Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]
+Inner Speech, link: [https://openneuro.org/datasets/ds003626/versions/2.1.2]..
 Files:
 Total Trials = 5640
 Conditions = 0=Pronounced / 1=Inner / 2=Visualized
